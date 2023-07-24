@@ -1,5 +1,4 @@
 // global using learnApi.Data;
-using learnApi.Service.UserService;
 using learnApi.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,7 +9,6 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddDbContext<DataContextEF>();
 
 var app = builder.Build();

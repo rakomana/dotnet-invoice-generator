@@ -1,7 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
 using learnApi.Models;
-using learnApi.Service.UserService;
+using learnApi.Data;
+using Microsoft.AspNetCore.Mvc;
 
 namespace learnApi.Controllers
 {
@@ -9,50 +8,58 @@ namespace learnApi.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        private readonly IUserService _userService;
-        public UserController(IUserService userService)
+        private readonly DataContextEF _context;
+
+        public UserController(DataContextEF context)
         {
-            _userService = userService;
+            _context = context;
         }
 
-       [HttpGet]
-       public async Task<ActionResult<List<User>>> GetUsers()
-       {
-            var result = await _userService.GetUsers();
-
-            return Ok(result);
-       }
-
-       [HttpGet("{id}")]
-       public async Task<ActionResult<List<User>>> GetSingleUser(int id)
-       {
-            var result = _userService.GetSingleUser(id);
-
-            if(result is null)
-                return NotFound("user is not found");
-            return Ok(result);
-       }
-
+        public DataContextEF Context => _context;
+    
         [HttpPost]
-       public async Task<ActionResult<List<User>>> AddUser(User user)
-       {
-            var result = _userService.AddUser(user);
+        public async Task<ActionResult<List<Quotation>>> AddQuotation(User request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            // Create User instance from the received model
+            User user = new User
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName
+            };
 
-            if(result is null)
-                return NotFound("User not found");
+            // Create Quotation instance from the received model
+            Quotation quotation = new Quotation
+            {
+                EntityName = request.Quotation.EntityName,
+                EntityDescription = request.Quotation.EntityDescription,
+                DateCreated = request.Quotation.DateCreated,
+                QuotationNumber = request.Quotation.QuotationNumber,
+                // Assign the UserId to the Quotation (foreign key relationship)
+                UserId = user.Id
+            };
 
-            return Ok(result);
-       }
+            user.Quotation = quotation;
 
-        [HttpPut("{id}")]
-       public async Task<ActionResult<List<User>>> UpdateUser(int id, User request)
-       {
-            var result = _userService.UpdateUser(id, request);
+            // Add the User and Quotation to the context and save changes
+            _context.users.Add(user);
+            _context.SaveChanges();
 
-            if(result is null)
-                return NotFound("user not found");
-
-            return Ok(result);
-       }
+            return Ok(new { message = "User and Quotation saved successfully." });
+        }
     }
 }
+/*
+            {
+                "firstName": "John",
+                "lastName": "Doe",
+                "quotation": {
+                    "entityName": "Sample Entity",
+                    "entityDescription": "Sample description",
+                    "dateCreated": "2023-05-10",
+                    "quotationNumber": "Q12345"
+                }
+            }*/
