@@ -17,7 +17,7 @@ namespace learnApi.Controllers
 
         public DataContextEF Context => _context;
     
-        [HttpPost]
+        [HttpPost("/api/user/quotation")]
         public async Task<ActionResult<List<Quotation>>> AddQuotation(User request)
         {
             if (!ModelState.IsValid)
@@ -49,6 +49,14 @@ namespace learnApi.Controllers
             _context.SaveChanges();
 
             return Ok(new { message = "User and Quotation saved successfully." });
+        }
+
+        [HttpGet("/api/quotations")]
+        public async Task<ActionResult<List<Quotation>>> GetQuotations() 
+        {
+            var quotations = _context.quotations.ToList();
+
+            return Ok(quotations);
         }
     }
 }
