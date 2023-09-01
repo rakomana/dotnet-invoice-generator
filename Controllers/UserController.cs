@@ -1,6 +1,11 @@
 using learnApi.Models;
 using learnApi.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.Text;
 
 namespace learnApi.Controllers
 {
@@ -9,13 +14,63 @@ namespace learnApi.Controllers
     public class UserController : ControllerBase
     {
         private readonly DataContextEF _context;
+        private readonly IConfiguration _configuration;
 
-        public UserController(DataContextEF context)
+        public UserController(DataContextEF context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         public DataContextEF Context => _context;
+
+                [Route("GetTestUnAuthorise")]
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> GetTestUnAuthorise()
+        {
+            return Ok("Hello world from GetTestUnAuthorise");
+        }
+
+        [Route("GetTestAuthorise")]
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> GetTestAuthorise()
+        {
+            return Ok("Hello world from GetTestAuthorise");
+        }
+
+
+        [Route("CheckLogin")]
+        [AllowAnonymous]
+        [HttpPost]
+        public async Task<IActionResult> CheckLogin(User model)
+        {
+            if (model.FirstName == "admin" && model.LastName == "password")
+            {
+                var claims = new[] {
+                        new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]),
+                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
+                        new Claim("FirstName", model.FirstName)
+                    };
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+                var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                var token = new JwtSecurityToken(
+                    _configuration["Jwt:Issuer"],
+                    _configuration["Jwt:Audience"],
+                    claims,
+                    expires: DateTime.UtcNow.AddMinutes(10),
+                    signingCredentials: signIn);
+                model.FirstName = "Login Success";
+                model.LastName = new JwtSecurityTokenHandler().WriteToken(token);
+            }
+            else
+            {
+                model.FirstName = "Login Failed";
+            }
+            return Ok(model);
+        }
     
         [HttpPost("/api/user/quotation")]
         public async Task<ActionResult<List<Quotation>>> AddQuotation(User request)
@@ -70,4 +125,8 @@ namespace learnApi.Controllers
                     "dateCreated": "2023-05-10",
                     "quotationNumber": "Q12345"
                 }
-            }*/
+            }
+            
+[AllowAnonymous] -  is used to specify that a particular controller action or method should allow unauthenticated
+[Authorize] // Requires authentication
+*/
