@@ -6,6 +6,8 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using System.Text;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace learnApi.Controllers
 {
@@ -44,15 +46,23 @@ namespace learnApi.Controllers
         [Route("CheckLogin")]
         [AllowAnonymous]
         [HttpPost]
-        public async Task<IActionResult> CheckLogin(User model)
+        public async Task<IActionResult> CheckLogin([FromBody] LoginRequest model)
         {
-            if (model.FirstName == "admin" && model.LastName == "password")
+            var username = model.Username;
+            var password = model.Password;
+            
+            string message;
+            
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            {
+                return BadRequest("Username and password are required.");
+            } else 
             {
                 var claims = new[] {
                         new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]),
                         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                         new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                        new Claim("FirstName", model.FirstName)
+                        new Claim("Username", username)
                     };
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
                 var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -62,14 +72,16 @@ namespace learnApi.Controllers
                     claims,
                     expires: DateTime.UtcNow.AddMinutes(10),
                     signingCredentials: signIn);
-                model.FirstName = "Login Success";
-                model.LastName = new JwtSecurityTokenHandler().WriteToken(token);
+                message = "Login Success";
+                password = new JwtSecurityTokenHandler().WriteToken(token);
             }
-            else
-            {
-                model.FirstName = "Login Failed";
-            }
-            return Ok(model);
+
+            var response = new {
+                Token = password,
+                Message = message
+            };
+            
+            return Ok(response);
         }
     
         [HttpPost("/api/user/quotation")]
