@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 namespace learnApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/")]
     public class UserController : ControllerBase
     {
         private readonly DataContextEF _context;
@@ -26,7 +26,7 @@ namespace learnApi.Controllers
 
         public DataContextEF Context => _context;
 
-                [Route("GetTestUnAuthorise")]
+        [Route("user/")]
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetTestUnAuthorise()
@@ -34,57 +34,15 @@ namespace learnApi.Controllers
             return Ok("Hello world from GetTestUnAuthorise");
         }
 
-        [Route("GetTestAuthorise")]
+        [Route("user")]
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> GetTestAuthorise()
         {
             return Ok("Hello world from GetTestAuthorise");
         }
-
-
-        [Route("CheckLogin")]
-        [AllowAnonymous]
-        [HttpPost]
-        public async Task<IActionResult> CheckLogin([FromBody] LoginRequest model)
-        {
-            var username = model.Username;
-            var password = model.Password;
-            
-            string message;
-            
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
-            {
-                return BadRequest("Username and password are required.");
-            } else 
-            {
-                var claims = new[] {
-                        new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                        new Claim("Username", username)
-                    };
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-                var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-                var token = new JwtSecurityToken(
-                    _configuration["Jwt:Issuer"],
-                    _configuration["Jwt:Audience"],
-                    claims,
-                    expires: DateTime.UtcNow.AddMinutes(10),
-                    signingCredentials: signIn);
-                message = "Login Success";
-                password = new JwtSecurityTokenHandler().WriteToken(token);
-            }
-
-            var response = new {
-                Token = password,
-                Message = message
-            };
-            
-            return Ok(response);
-        }
     
-        [HttpPost("/api/user/quotation")]
+        [HttpPost("user/quotation")]
         public async Task<ActionResult<List<Quotation>>> AddQuotation(User request)
         {
             if (!ModelState.IsValid)
@@ -118,7 +76,7 @@ namespace learnApi.Controllers
             return Ok(new { message = "User and Quotation saved successfully." });
         }
 
-        [HttpGet("/api/quotations")]
+        [HttpGet("user/quotation")]
         public async Task<ActionResult<List<Quotation>>> GetQuotations() 
         {
             var quotations = _context.quotations.ToList();
@@ -142,3 +100,24 @@ namespace learnApi.Controllers
 [AllowAnonymous] -  is used to specify that a particular controller action or method should allow unauthenticated
 [Authorize] // Requires authentication
 */
+
+// dotnet add package BCrypt.Net
+
+// using BCrypt.Net;
+
+// // Hash a password
+// string password = "SecurePassword123"; // Replace with the actual password
+// string hashedPassword = BCrypt.HashPassword(password);
+
+
+// using BCrypt.Net;
+
+// string hashedPassword = "hashed_password_from_database"; // Replace with the hashed password from your database
+// string passwordAttempt = "SecurePassword123"; // Replace with the attempted password
+
+// bool isPasswordValid = BCrypt.Verify(passwordAttempt, hashedPassword);
+
+// if (isPasswordValid)
+// {
+//     // Password is correct
+// }
