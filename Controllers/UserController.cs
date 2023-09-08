@@ -29,7 +29,7 @@ namespace learnApi.Controllers
         [Route("user/")]
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> GetTestUnAuthorise()
+        public async Task<IActionResult> GetUser()
         {
             return Ok("Hello world from GetTestUnAuthorise");
         }
@@ -42,7 +42,7 @@ namespace learnApi.Controllers
             return Ok("Hello world from GetTestAuthorise");
         }
     
-        [HttpPost("user/quotation")]
+        [HttpPost("user/quotation/{user_id}")]
         public async Task<ActionResult<List<Quotation>>> AddQuotation(User request)
         {
             if (!ModelState.IsValid)

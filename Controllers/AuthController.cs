@@ -6,7 +6,6 @@ using learnApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using BCrypt.Net;
 
 namespace learnApi.Controllers
 {
@@ -71,42 +70,30 @@ namespace learnApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Register([FromBody] RegisterRequest model)
         {
-            var username = model.Username;
-            var password = model.Password;
-            var firstname = model.FirstName;
-            var lastname = model.LastName;
-            
-            string message;
-            
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            try
             {
-                return BadRequest("Username and password are required.");
-            } else 
-            {
-                var claims = new[] {
-                        new Claim(JwtRegisteredClaimNames.Sub, _configuration["Jwt:Subject"]),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                        new Claim("Username", username)
-                    };
-                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-                var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-                var token = new JwtSecurityToken(
-                    _configuration["Jwt:Issuer"],
-                    _configuration["Jwt:Audience"],
-                    claims,
-                    expires: DateTime.UtcNow.AddMinutes(10),
-                    signingCredentials: signIn);
-                message = "Login Success";
-                password = new JwtSecurityTokenHandler().WriteToken(token);
-            }
+                var passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
 
-            var response = new {
-                Token = password,
-                Message = message
-            };
-            
-            return Ok(response);
+                var newUser = new User
+                {
+                    UserName = model.Username,
+                    Password = passwordHash,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName
+                };
+
+                _context.users.Add(newUser);
+                await _context.SaveChangesAsync();
+
+                var response = new { Message = "User created successfully." };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions or validation errors appropriately.
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
         }
 
         [Route("reset-password")]
